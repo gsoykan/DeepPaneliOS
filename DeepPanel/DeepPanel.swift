@@ -83,7 +83,7 @@ public class DeepPanel {
         #else
               // Use GPU on real device for inference as this model is fully supported.
             // Disabling GPU, because it does not seem to work
-              delegates = [MetalDelegate()]
+          //    delegates = [MetalDelegate()]
         #endif
         do {
           let interpreter = try Interpreter(modelPath: modelPath, options: options, delegates: delegates)
