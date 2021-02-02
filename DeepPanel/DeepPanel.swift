@@ -82,6 +82,7 @@ public class DeepPanel {
               options?.threadCount = 2
         #else
               // Use GPU on real device for inference as this model is fully supported.
+            // Disabling GPU, because it does not seem to work
               delegates = [MetalDelegate()]
         #endif
         do {
@@ -102,10 +103,10 @@ public class DeepPanel {
             try interpreter.copy(input, toInputAt: 0)
             try interpreter.invoke()
             let outputTensor = try interpreter.output(at: 0)
-            let prediction = mapOutputTensorToPredicition(outputTensor)
+            var prediction = mapOutputTensorToPredicition(outputTensor)
             let scale: Float = computeResizeScale(originalImageWidth, originalImageHeight)
             return nativeDeepPanel.extractPanelsInfo(
-                prediction,
+                &prediction,
                 andScale: scale,
                 andOriginalImageWidth: Int32(originalImageWidth),
                 andOriginalImageHeigth: Int32(originalImageHeight))
@@ -113,10 +114,18 @@ public class DeepPanel {
             fatalError("Failed to evaluate the model with the image data: \(error.localizedDescription)")
         }
     }
+  
+    // This does not work for device as well
+ //   private func mapOutputTensorToPredicition(_ outputTensor: Tensor) -> UnsafeMutablePointer<Float> {
+ //       let logits: [Float32] = outputTensor.data.toArray(type: Float32.self)
+ //       return UnsafeMutablePointer(mutating: logits)
+//   }
     
-    private func mapOutputTensorToPredicition(_ outputTensor: Tensor) -> UnsafeMutablePointer<Float> {
-        let logits: [Float32] = outputTensor.data.toArray(type: Float32.self)
-        return UnsafeMutablePointer(mutating: logits)
+     private func mapOutputTensorToPredicition(_ outputTensor: Tensor) -> [Float32] {
+        let logits: [Float32] = outputTensor.data.toArray(type: Float32.self).map { (e)  in
+            return Float32(e)
+        }
+        return logits
     }
     
     private func scaleAndExtractImageRgbData(_ image: UIImage) -> Data {
